@@ -37,7 +37,19 @@ public class TipoCuentaNegocio implements ITipoCuentaNegocio {
 		// 1. Ensamblar dominio
 		final TipoCuentaDominio tipoCuentaDominio = TipoCuentaEnsamblador.obtenerTipoCuentaEnsamblador().ensamblarDominio(tipoCuenta, OperacionEnum.CREAR);
 
-		// 2. Crear el tipo de cuenta en la fuente de información
+		// 2. Validar que no exista un tipo de cuenta con el nombre deseado
+		final TipoCuentaDominio validarReglaUno = TipoCuentaDominio.CREAR(0, tipoCuentaDominio.getNombre(), OperacionEnum.CREAR );
+		
+		
+		final List<TipoCuentaDominio> registrosReglaUno = factoria.obtenerTipoCuentaDAO().consultar(validarReglaUno);
+		if (!registrosReglaUno.isEmpty()) {
+			final String mensajeUsuario = "Ya existe un tipo de cuenta con el nombre ingresado.";
+			final String mensajeTecnico = "No se pueden registrar dos tipos de cuenta";
+			
+			throw AplicacionExcepcion.CREAR(mensajeTecnico,mensajeUsuario,ExcepcionEnum.NEGOCIO);
+		}
+		
+		// 3. Crear el tipo de cuenta en la fuente de información
 		factoria.obtenerTipoCuentaDAO().crear(tipoCuentaDominio);
 	}
 
@@ -47,8 +59,37 @@ public class TipoCuentaNegocio implements ITipoCuentaNegocio {
 		// 1. Ensamblar dominio
 		final TipoCuentaDominio tipoCuentaDominio = TipoCuentaEnsamblador.obtenerTipoCuentaEnsamblador().ensamblarDominio(tipoCuenta, OperacionEnum.ACTUALIZAR);
 
-		// 2. Crear el tipo de cuenta en la fuente de información
-		factoria.obtenerTipoCuentaDAO().actualizar(tipoCuentaDominio);
+		// 2. Validar que exista en tipo de cuenta con el codigo enviado
+		final TipoCuentaDominio validarReglaUno = TipoCuentaDominio.CREAR(tipoCuentaDominio.getCodigo(), tipoCuentaDominio.getNombre(), OperacionEnum.CREAR);
+
+		
+		final List<TipoCuentaDominio> registrosReglaUno = factoria.obtenerTipoCuentaDAO().consultar(validarReglaUno);
+		
+		
+		if (!registrosReglaUno.isEmpty()) {
+			final String mensajeUsuario = "no es posible actualizar un tipo de cuenta no existente.";
+			final String mensajeTecnico = "No se pueden actualiar ya que el codigo no existe";
+			
+			throw AplicacionExcepcion.CREAR(mensajeTecnico,mensajeUsuario,ExcepcionEnum.NEGOCIO);
+		}
+		
+		// 3. Validar que no existe otro tipo de cuenta con el nombre enviado
+				final TipoCuentaDominio validarReglaDos = TipoCuentaDominio.CREAR(0,tipoCuentaDominio.getNombre(), OperacionEnum.CREAR );
+				
+				final List<TipoCuentaDominio> registrosReglaDos = factoria.obtenerTipoCuentaDAO().consultar(validarReglaDos);
+				
+				
+				if (!registrosReglaDos.isEmpty() && tipoCuentaDominio.getCodigo() != registrosReglaDos.get(0).getCodigo()) {
+					final String mensajeUsuario = "no es posible actualizar un tipo de cuenta no existente.";
+					final String mensajeTecnico = "No se pueden actualiar ya que el codigo no existe";
+					
+					throw AplicacionExcepcion.CREAR(mensajeTecnico,mensajeUsuario,ExcepcionEnum.NEGOCIO);
+				}
+		// 4. Solo actualizo si cambiaron los datos
+				if (registrosReglaUno.get(0).getNombre().equals(tipoCuentaDominio.getNombre())) {
+					factoria.obtenerTipoCuentaDAO().actualizar(tipoCuentaDominio);
+				}
+		
 	}
 
 	@Override
@@ -56,7 +97,22 @@ public class TipoCuentaNegocio implements ITipoCuentaNegocio {
 
 		// 1. Ensamblar dominio
 		final TipoCuentaDominio tipoCuentaDominio = TipoCuentaEnsamblador.obtenerTipoCuentaEnsamblador().ensamblarDominio(tipoCuenta, OperacionEnum.ELIMINAR);
-
+ 
+		// 2. Validar que exista en tipo de cuenta con el codigo enviado
+		final TipoCuentaDominio validarReglaUno = TipoCuentaDominio.CREAR(tipoCuentaDominio.getCodigo(), tipoCuentaDominio.getNombre(), OperacionEnum.CREAR);
+		
+		final List<TipoCuentaDominio> registrosReglaUno = factoria.obtenerTipoCuentaDAO().consultar(validarReglaUno);
+		
+		
+		if (!registrosReglaUno.isEmpty()) {
+			final String mensajeUsuario = "no es posible eliminar un tipo de cuenta no existente.";
+			final String mensajeTecnico = "No se pueden eliminar ya que el codigo no existe";
+			
+			throw AplicacionExcepcion.CREAR(mensajeTecnico,mensajeUsuario,ExcepcionEnum.NEGOCIO);
+		}
+		
+		// 3. Validar que esa entidad no se este usando en otro lugar como FK
+		
 		// 2. Crear el tipo de cuenta en la fuente de información
 		factoria.obtenerTipoCuentaDAO().eliminar(tipoCuentaDominio);
 	}
